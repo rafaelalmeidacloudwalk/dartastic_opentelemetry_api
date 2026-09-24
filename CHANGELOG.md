@@ -107,6 +107,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `IdGenerator` no longer draws every ID byte from a fresh
+  `Random.secure().nextInt(256)` call (one OS entropy syscall per byte), which
+  made generating a span ID cost ~330 µs and a trace ID ~665 µs on macOS arm64 —
+  roughly 1 ms to start a root span. It now seeds a xorshift128 generator once
+  from the OS CSPRNG and expands it locally (~18,000–21,000× faster), keeping
+  the same 8/16-byte, non-zero, unique-ID contract, with 32-bit-masked
+  arithmetic so VM and web builds produce identical sequences
+  ([#144](https://github.com/MindfulSoftwareLLC/dartastic_opentelemetry_api/pull/144)).
 - `TraceState` construction (`fromMap`, `OTelAPI`/`OTelFactory` `traceState(...)`)
   now validates keys and values against the W3C tracestate grammar, dropping
   invalid entries instead of silently accepting them
