@@ -82,16 +82,24 @@ class IdGenerator {
 /// which made ID generation the dominant cost of creating a span under load.
 ///
 /// The W3C Trace Context spec requires trace/span IDs to be random and
-/// globally unique (§3.3.1), not cryptographically secure per byte — the same
-/// trade-off other OpenTelemetry SDKs make (e.g. Java's `ThreadLocalRandom`,
-/// Rust's per-thread ChaCha RNG). We therefore read entropy from the OS once
-/// to seed this generator, then expand it locally.
+/// globally unique (§8.2, "Randomness of trace ID"), not cryptographically
+/// secure per byte — the same trade-off other OpenTelemetry SDKs make (e.g.
+/// Java's `ThreadLocalRandom`, Rust's per-thread SmallRng seeded from OS
+/// randomness). We therefore read entropy from the OS once to seed this
+/// generator, then expand it locally.
 ///
 /// The generator is Marsaglia's xorshift128 with a 128-bit state held as
 /// four unsigned 32-bit words. All arithmetic is masked to 32 bits, so the
 /// output sequence is identical on the VM and when compiled to JavaScript
 /// (where `int` is a 64-bit float and unmasked 64-bit `+`/`*` would lose
 /// precision); only XOR and shifts are used, never addition.
+///
+/// One consequence of the small state: a locally generated 16-byte trace ID
+/// exposes the full xorshift state, so the following IDs drawn in the same
+/// isolate can be calculated from it. That is acceptable for tracing IDs —
+/// uniqueness and sampling randomness are what the spec asks for — but it
+/// means generated IDs are predictable and must never be used as secrets,
+/// tokens, or any security-relevant value.
 class _Prng {
   _Prng._(this._x, this._y, this._z, this._w);
 

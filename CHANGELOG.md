@@ -113,7 +113,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   roughly 1 ms to start a root span. It now seeds a xorshift128 generator once
   from the OS CSPRNG and expands it locally (~18,000–21,000× faster), keeping
   the same 8/16-byte, non-zero, unique-ID contract, with 32-bit-masked
-  arithmetic so VM and web builds produce identical sequences
+  arithmetic so VM and web builds produce identical sequences. Note that a
+  locally generated trace ID exposes the full generator state, so subsequent
+  IDs from the same isolate are predictable — generated IDs must not be used
+  as secrets or security tokens
   ([#144](https://github.com/MindfulSoftwareLLC/dartastic_opentelemetry_api/pull/144)).
 - `TraceState` construction (`fromMap`, `OTelAPI`/`OTelFactory` `traceState(...)`)
   now validates keys and values against the W3C tracestate grammar, dropping
